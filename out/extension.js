@@ -4,6 +4,22 @@ exports.deactivate = exports.activate = exports.flag = exports.commentLine = voi
 const vscode = require("vscode");
 exports.commentLine = -1;
 exports.flag = false;
+function findLastComment(editor) {
+    let document = editor.document;
+    let lastComment = null;
+    let endingLine = document.lineAt(document.lineCount - 1);
+    for (let i = document.lineCount - 1; i >= 0; i--) {
+        let line = document.lineAt(i);
+        if (line.text.endsWith("**/ ")) {
+            endingLine = line;
+        }
+        if (line.text.startsWith("/**")) {
+            lastComment = new vscode.Range(line.range.start, endingLine.range.end);
+            break;
+        }
+    }
+    return lastComment ? lastComment : null;
+}
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 function activate(context) {
@@ -15,17 +31,42 @@ function activate(context) {
     // The commandId parameter must match the command field in package.json
     // Register a callback function that will be called every time the active document changes
     let disposable1 = vscode.commands.registerTextEditorCommand('code-hinter.logCurrentLine', (textEditor) => {
-        const currentLine = textEditor.document.lineAt(textEditor.selection.active.line).text;
-        console.log(currentLine);
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            console.log("editor not found");
+            return;
+        }
+        let lastComment1 = findLastComment(editor);
+        //console.log("wejwoidjaosijdoiasjdoaisda!!!!!!");
+        if (lastComment1) {
+            editor.edit(editBuilder => {
+                if (lastComment1) {
+                    editBuilder.delete(lastComment1);
+                }
+            });
+        }
     });
     context.subscriptions.push(disposable1);
     let disposable2 = vscode.workspace.onDidChangeTextDocument((event) => {
         const latestChange = event.contentChanges[event.contentChanges.length - 1];
         const text = latestChange.text;
-        vscode.window.showInformationMessage(latestChange.text);
         const isReturnKeyPressed = text.charAt(text.length - 1) === '\n' && !text.includes("/** Hint: ");
+        if (!text.includes("/** Hint: ")) {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                console.log("editor not found");
+                return;
+            }
+            let lastComment1 = findLastComment(editor);
+            if (lastComment1) {
+                editor.edit(editBuilder => {
+                    if (lastComment1) {
+                        editBuilder.delete(lastComment1);
+                    }
+                });
+            }
+        }
         if (isReturnKeyPressed) {
-            exports.flag = true;
             console.log("enter return statement");
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
@@ -33,81 +74,24 @@ function activate(context) {
                 return;
             }
             console.log("CommentLine:" + exports.commentLine);
-            if (exports.commentLine !== -1 && exports.flag) {
-                console.log("enter deleting statement");
-                let endingLine = exports.commentLine;
-                let lineText = editor.document.lineAt(endingLine).text;
-                while (endingLine < editor.document.lineCount && !lineText.includes("**/")) {
-                    lineText = editor.document.lineAt(endingLine).text;
-                    endingLine++;
-                }
-                console.log("ending: " + endingLine);
-                const endingLineLength = editor.document.lineAt(endingLine).text.length;
-                const endingPosition = new vscode.Position(endingLine, endingLineLength);
-                const commentRange = new vscode.Range(new vscode.Position(exports.commentLine, 0), endingPosition);
-                editor.edit((editBuilder) => {
-                    console.log("deleting");
-                    editBuilder.delete(commentRange);
-                }).then(() => {
-                    // Refresh and save the document after the change
-                    const document = editor.document;
-                    document.save();
-                    vscode.window.showInformationMessage('Text deleted and document saved!');
-                });
-                exports.commentLine = -1;
-            }
             const selection = editor.selection;
             const startPosition = new vscode.Position(0, 0);
-            const endPosition = selection.end;
+            const endPosition = selection.active;
             const content = editor.document.getText(new vscode.Range(startPosition, endPosition));
             exports.commentLine = endPosition.line + 1;
-            console.log("currentLine: " + exports.commentLine);
+            //console.log("currentLine: "+   commentLine);
             const commentString = "/** Hint: " + content + " **/ \n";
-            console.log(commentString);
+            //console.log(commentString);
             editor.edit((editBuilder) => {
                 console.log("enter inserting statement");
-                exports.flag = false;
-                editBuilder.insert(endPosition.with(exports.commentLine + 1), commentString);
-            }).then(() => {
-                // Refresh and save the document after the change
-                const document = editor.document;
-                document.save();
-                console.log("finish inserting statement");
-                vscode.window.showInformationMessage('Text inserted and document saved!');
+                editBuilder.insert(endPosition.with(exports.commentLine), commentString);
             });
-            // editor1.edit((editBuilder) => {
-            //     editBuilder.insert(endPosition.with(commentLine), commentString);
-            // });
         }
     });
-    //   if (editor) {
-    //     const position = editor.selection.active;
-    //     const commentString = "// This is a comment";
-    //     editor.edit((editBuilder) => {
-    //       editBuilder.insert(position, commentString);
-    //     });
-    //   }
     context.subscriptions.push(disposable2);
 }
 exports.activate = activate;
 // This method is called when your extension is deactivated
 function deactivate() { }
 exports.deactivate = deactivate;
-// if (editor) {
-//   const position = editor.selection.active;
-//   const document = editor.document;
-//   const line = document.lineAt(position.line);
-//   const commentStart = line.text.indexOf("//");
-//   if (commentStart >= 0 && commentStart < position.character) {
-//     const commentRange = new vscode.Range(
-//       position.line,
-//       commentStart,
-//       position.line,
-//       line.range.end.character
-//     );
-//     editor.edit((editBuilder) => {
-//       editBuilder.delete(commentRange);
-//     });
-//   }
-// }
 //# sourceMappingURL=extension.js.map
