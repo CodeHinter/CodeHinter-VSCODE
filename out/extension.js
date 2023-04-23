@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deactivate = exports.activate = exports.flag = exports.commentLine = void 0;
 const vscode = require("vscode");
+const tokenType_1 = require("./tokenType");
+const tokenResponse_1 = require("./tokenResponse");
 exports.commentLine = -1;
 exports.flag = false;
 function findLastComment(editor) {
@@ -37,7 +39,6 @@ function activate(context) {
             return;
         }
         let lastComment1 = findLastComment(editor);
-        //console.log("wejwoidjaosijdoiasjdoaisda!!!!!!");
         if (lastComment1) {
             editor.edit(editBuilder => {
                 if (lastComment1) {
@@ -80,7 +81,7 @@ function activate(context) {
             const content = editor.document.getText(new vscode.Range(startPosition, endPosition));
             exports.commentLine = endPosition.line + 1;
             //console.log("currentLine: "+   commentLine);
-            const commentString = "/** Hint: " + content + " **/ \n";
+            const commentString = "/** Hint: " + callAPI() + " **/ \n";
             //console.log(commentString);
             editor.edit((editBuilder) => {
                 console.log("enter inserting statement");
@@ -91,6 +92,11 @@ function activate(context) {
     context.subscriptions.push(disposable2);
 }
 exports.activate = activate;
+function callAPI() {
+    const tokenType = Math.floor(Math.random() * Object.keys(tokenType_1.TokenType).length / 2);
+    const tokenDescription = (0, tokenResponse_1.getTokenDescription)(tokenType);
+    return tokenDescription;
+}
 // This method is called when your extension is deactivated
 function deactivate() { }
 exports.deactivate = deactivate;

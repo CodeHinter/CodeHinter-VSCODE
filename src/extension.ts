@@ -2,6 +2,8 @@
 // Import the module and reference it with the alias vscode in your code below
 import { log } from "console";
 import * as vscode from "vscode";
+import { TokenType } from "./tokenType";
+import { getTokenDescription } from "./tokenResponse";
 
 
 export let commentLine = -1;
@@ -44,7 +46,6 @@ export function activate(context: vscode.ExtensionContext) {
           return;
         }
     let lastComment1 = findLastComment(editor);
-    //console.log("wejwoidjaosijdoiasjdoaisda!!!!!!");
      if (lastComment1) {
         editor.edit(editBuilder => {
           if(lastComment1){
@@ -90,7 +91,7 @@ export function activate(context: vscode.ExtensionContext) {
         const content = editor.document.getText(new vscode.Range(startPosition, endPosition));
         commentLine = endPosition.line+1;
         //console.log("currentLine: "+   commentLine);
-        const commentString = "/** Hint: "+content+" **/ \n";
+        const commentString = "/** Hint: "+callAPI()+" **/ \n";
        //console.log(commentString);
         editor.edit((editBuilder: vscode.TextEditorEdit) => {
             console.log("enter inserting statement");
@@ -98,12 +99,15 @@ export function activate(context: vscode.ExtensionContext) {
         });
     }
   });
-
-
-
-
   context.subscriptions.push(disposable2);
 }
+
+function callAPI(): string{
+  const tokenType = Math.floor(Math.random() * Object.keys(TokenType).length / 2);
+  const tokenDescription = getTokenDescription(tokenType);
+  return tokenDescription ;
+}
+
 
 // This method is called when your extension is deactivated
 export function deactivate() {}
