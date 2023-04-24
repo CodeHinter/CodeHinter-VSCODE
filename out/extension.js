@@ -2,8 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deactivate = exports.activate = exports.flag = exports.commentLine = void 0;
 const vscode = require("vscode");
-const tokenType_1 = require("./tokenType");
 const tokenResponse_1 = require("./tokenResponse");
+const axios_1 = require("axios");
+const apiUrl = 'http://localhost:5000/model';
 exports.commentLine = -1;
 exports.flag = false;
 function findLastComment(editor) {
@@ -32,7 +33,7 @@ function activate(context) {
     // Now provide the implementation of the command with registerCommand
     // The commandId parameter must match the command field in package.json
     // Register a callback function that will be called every time the active document changes
-    let disposable1 = vscode.commands.registerTextEditorCommand('code-hinter.logCurrentLine', (textEditor) => {
+    let disposable1 = vscode.commands.registerTextEditorCommand("code-hinter.logCurrentLine", (textEditor) => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             console.log("editor not found");
@@ -40,7 +41,7 @@ function activate(context) {
         }
         let lastComment1 = findLastComment(editor);
         if (lastComment1) {
-            editor.edit(editBuilder => {
+            editor.edit((editBuilder) => {
                 if (lastComment1) {
                     editBuilder.delete(lastComment1);
                 }
@@ -48,10 +49,13 @@ function activate(context) {
         }
     });
     context.subscriptions.push(disposable1);
-    let disposable2 = vscode.workspace.onDidChangeTextDocument((event) => {
+    // Register a callback function that will be called every time the active document changes
+    let disposable2 = vscode.workspace.onDidChangeTextDocument(async (event) => {
         const latestChange = event.contentChanges[event.contentChanges.length - 1];
-        const text = latestChange.text;
-        const isReturnKeyPressed = text.charAt(text.length - 1) === '\n' && !text.includes("/** Hint: ");
+        let text = '';
+        if (latestChange)
+            text = latestChange.text;
+        const isReturnKeyPressed = text.charAt(text.length - 1) === "\n" && !text.includes("/** Hint: ");
         if (!text.includes("/** Hint: ")) {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
@@ -60,7 +64,7 @@ function activate(context) {
             }
             let lastComment1 = findLastComment(editor);
             if (lastComment1) {
-                editor.edit(editBuilder => {
+                editor.edit((editBuilder) => {
                     if (lastComment1) {
                         editBuilder.delete(lastComment1);
                     }
@@ -68,33 +72,37 @@ function activate(context) {
             }
         }
         if (isReturnKeyPressed) {
-            console.log("enter return statement");
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
                 console.log("editor not found");
                 return;
             }
-            console.log("CommentLine:" + exports.commentLine);
             const selection = editor.selection;
             const startPosition = new vscode.Position(0, 0);
             const endPosition = selection.active;
             const content = editor.document.getText(new vscode.Range(startPosition, endPosition));
+            const wholeDocument = editor.document.getText();
             exports.commentLine = endPosition.line + 1;
-            //console.log("currentLine: "+   commentLine);
-            const commentString = "/** Hint: " + callAPI() + " **/ \n";
-            //console.log(commentString);
-            editor.edit((editBuilder) => {
-                console.log("enter inserting statement");
-                editBuilder.insert(endPosition.with(exports.commentLine), commentString);
-            });
+            const res = await callAPI(wholeDocument, exports.commentLine);
+            if (res !== "Unknown Token Type.") {
+                const commentString = "/** Hint: " + res + " **/ \n";
+                editor.edit((editBuilder) => {
+                    editBuilder.insert(endPosition.with(exports.commentLine), commentString);
+                });
+            }
         }
     });
     context.subscriptions.push(disposable2);
 }
 exports.activate = activate;
-function callAPI() {
-    const tokenType = Math.floor(Math.random() * Object.keys(tokenType_1.TokenType).length / 2);
-    const tokenDescription = (0, tokenResponse_1.getTokenDescription)(tokenType);
+async function callAPI(content, line) {
+    console.log("Current Document: \n" + content + "------------------");
+    console.log("User final typed line: " + line);
+    const response = await axios_1.default.post(apiUrl, { content, line_number: line });
+    let tokenType = response.data.result;
+    console.log(tokenType);
+    const tokenDescription = (0, tokenResponse_1.getTokenDescription)(tokenType[0]);
+    console.log(tokenDescription);
     return tokenDescription;
 }
 // This method is called when your extension is deactivated
