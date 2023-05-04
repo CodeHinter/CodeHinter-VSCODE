@@ -1,71 +1,33 @@
-# code-hinter README
+# Technical Report on the Development of a Code Hinter VS Code Extension
 
-This is the README for your extension "code-hinter". After writing up a brief description, we recommend including the following sections.
+## 1. Introduction
 
-## Features
+The Code Hinter extension assists programmers in maintaining consistent code style and providing hints during the programming process. As a Visual Studio Code (VS Code) extension, it reaches a broad audience and integrates seamlessly with the popular IDE. VS Code's rich ecosystem, robust API, and built-in marketplace allow the Code Hinter extension to deliver a streamlined, native, and intuitive user experience, improving code quality and maintainability.
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+## 2. Implementation
 
-For example if there is an image subfolder under your extension project workspace:
+The VS Code extension is implemented using TypeScript, the Language API provided by VS Code, and a Flask server that serves as an API to call the trained model. The process consists of the following steps:
 
-\!\[feature X\]\(images/feature-x.png\)
+### 2.1. Check user input character
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+The extension monitors the user's input and checks if the typed character is ';' or '}'. If either of these characters is detected, the extension prepares to insert a comment.
 
-## Requirements
+### 2.2. Call Flask API
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+The extension makes a POST request to the Flask server, sending the current document and the last input line number.
 
-## Extension Settings
+### 2.3. Await server response
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+The extension waits for the server's response, which includes information on whether there was an error or a specific token type (implemented as an enumeration).
 
-For example:
+### 2.4. Insert comment
 
-This extension contributes the following settings:
+Based on the server's response, the extension inserts a comment by mapping the received token to a hardcoded comment.
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+### 2.5. Alternative flow
 
-## Known Issues
+If the user's typed character is neither ';' nor '}', the extension tries to find the last generated comment and deletes it.
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+## 3. Examples and Resources
 
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+The extension is also available on the VS Code Extension Marketplace: https://marketplace.visualstudio.com/items?itemName=hongshuw.code-hinter
