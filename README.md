@@ -1,4 +1,4 @@
-# Technical Report on the Development of a Code Hinter VS Code Extension
+# Readme
 
 ## 1. Introduction
 
